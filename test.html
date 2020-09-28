@@ -1,11 +1,11 @@
-//Creating Shape
+<!--Creating Shape
 var geometry = new THREE.BoxGeometry(1, 1, 1);
 
 //create a material, color, or image texture
 var material = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, wireframe: false });
 var cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
-
+-->
 <!DOCTYPE html>
 <html>
 
@@ -17,44 +17,39 @@ scene.add(cube);
 <body>
   <script type="module">
 
-    import * as THREE from './js/three.module.js';
+    import * as THREE from './js/modules/three.module.js';
     import { FirstPersonControls } from './js/FirstPersonControls.js';
-    import { OrbitControls } from "./js/OrbitControls.js"
-    import Stats from './js/stats.module.js';
+    import { OrbitControls } from "./js/modules/OrbitControls.js"
+    //import Stats from './js/modules/stats.module.js';
     import { ImprovedNoise } from './js/ImprovedNoise.js';
+    import { GLTFLoader } from './js/loaders/jsm/GLTFLoader.js';
     //import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 
-    var container, stats;
-    var camera, controls, scene, renderer;
+    //Global Variables
+    var stats;
+    var camera, scene, renderer;
     var mesh, texture;
-
-    var worldWidth = 256, worldDepth = 256,
-      worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
-
+    var worldWidth = 256, worldDepth = 256
+    var worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
+    var data = generateHeight(worldWidth, worldDepth);
     var clock = new THREE.Clock();
 
     function init() {
 
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 20000);
-
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xbfd1e5);
-
-      var data = generateHeight(worldWidth, worldDepth);
-
-      camera.position.y = data[worldHalfWidth + worldHalfDepth * worldWidth] * 10 + 500;
+      scene.background = new THREE.Color(0x000000);
 
       var geometry = new THREE.PlaneBufferGeometry(7500, 7500, worldWidth - 1, worldDepth - 1);
       geometry.rotateX(- Math.PI / 2);
 
       var vertices = geometry.attributes.position.array;
-
-      for (var i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
- 
-         vertices[j + 1] = data[i] * 5;
- 
-       }
+      /*
+            for (var i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
        
+               vertices[j + 1] = data[i] * 5;
+       
+             }
+       */
       texture = new THREE.CanvasTexture(generateTexture(data, worldWidth, worldDepth));
       texture.wrapS = THREE.ClampToEdgeWrapping;
       texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -67,27 +62,127 @@ scene.add(cube);
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
+      cam();
+      controller();
+      //FPSstats();
+      twinkle();
+      lights();
+      addModels();
+
+      window.addEventListener('resize', onWindowResize, false);
+
+    }
+
+    function cam() {
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 20000);
+      camera.position.y = data[worldHalfWidth + worldHalfDepth * worldWidth] * 10 + 500;
+    }
+
+    function controller() {
+      var controls;
       //controls = new FirstPersonControls(camera, renderer.domElement);
       //controls.movementSpeed = 1000;
       //controls.lookSpeed = 0.1;
       controls = new OrbitControls(camera, renderer.domElement);
+    }
 
-      stats = new Stats();
-      document.body.appendChild(stats.dom);
+    /*  function FPSstats() {
+          stats = new Stats();
+          document.body.appendChild(stats.dom);
+        }
+    */
 
-      //
+    var mixer;
+    function addModels() {
+      var loader = new GLTFLoader();
+      loader.load(
+        // resource URL
+        //'./assets/DamagedHelmet/DamagedHelmet.gltf',       
+        //'./assets/roboticArm.gltf',
+        './assets/roboticArmAnimated.gltf',
 
-      window.addEventListener('resize', onWindowResize, false);
+        // called when the resource is loaded
+        function (gltf) {
+          scene.add(gltf.scene);
 
+          mixer = new THREE.AnimationMixer(gltf.scene);
+          var action = mixer.clipAction(gltf.animations[0]);
+          action.play();
+
+          //gltf.animations; // Array<THREE.AnimationClip>
+          gltf.scene; // THREE.Group
+          gltf.scenes; // Array<THREE.Group>
+          gltf.cameras; // Array<THREE.Camera>
+          gltf.asset;
+        },
+
+        // OPTIONAL: called while loading is progressing 
+        function (xhr) {
+          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+
+        // OPTIONAL: called when loading has errors
+        function (error) {
+          console.log('An error happened');
+        }
+      );
+    }
+
+    function lights() {
+      var hlight = new THREE.AmbientLight(0x404040, 100);
+      scene.add(hlight);
+
+      let directionalLight = new THREE.DirectionalLight(0xffffff, 5);
+      directionalLight.position.set(0, 1, 0);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      let light = new THREE.PointLight(0xc4c4c4, 2);
+      light.position.set(0, 300, 500);
+      scene.add(light);
+
+      let light2 = new THREE.PointLight(0xc4c4c4, 2);
+      light2.position.set(500, 100, 0);
+      scene.add(light2);
+
+      let light3 = new THREE.PointLight(0xc4c4c4, 2);
+      light3.position.set(0, 100, -500);
+      scene.add(light3);
+
+      let light4 = new THREE.PointLight(0xc4c4c4, 2);
+      light4.position.set(-500, 300, 500);
+      scene.add(light4);
+
+    }
+
+    function twinkle() {
+      let galaxySize = 10000;
+      let starGeo = new THREE.Geometry();
+      for (let i = 0; i < 60000; i++) {
+        let star = new THREE.Vector3(
+          Math.random() * galaxySize - galaxySize / 2,
+          Math.random() * galaxySize - galaxySize / 2,
+          Math.random() * galaxySize - galaxySize / 2
+        );
+        starGeo.vertices.push(star);
+      }
+
+      let sprite = new THREE.TextureLoader().load('./assets/star.png');
+      let starMaterial = new THREE.PointsMaterial({
+        color: 0xaaaaaa,
+        size: 0.7,
+        map: sprite
+      });
+
+      let stars = new THREE.Points(starGeo, starMaterial);
+      scene.add(stars);
     }
 
     function onWindowResize() {
 
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-
       renderer.setSize(window.innerWidth, window.innerHeight);
-
       controls.handleResize();
 
     }
@@ -184,8 +279,11 @@ scene.add(cube);
 
       requestAnimationFrame(animate);
 
+      var delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      
       render();
-      stats.update();
+      //stats.update();
 
     }
 
