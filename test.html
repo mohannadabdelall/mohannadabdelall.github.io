@@ -25,6 +25,7 @@
     camera.position.z = 6;
 
     var renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -55,16 +56,6 @@
         gltf.scenes; // Array<THREE.Group>
         gltf.cameras; // Array<THREE.Camera>
         gltf.asset;
-      },
-
-      // called while loading is progressing
-      function (xhr) {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-      },
-
-      // called when loading has errors
-      function (error) {
-        console.log('An error happened');
       }
     );
 
@@ -95,6 +86,11 @@
 
     //Orbit Controls
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.rotateSpeed = 0.1;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 5;
+
+
 
     //game logic
     var update = function () {
@@ -110,6 +106,7 @@
     // run gameloop (update, render, repeat)
     var GameLoop = function () {
       requestAnimationFrame(GameLoop);
+      controls.update();
       update();
       render();
     };
